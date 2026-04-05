@@ -12,6 +12,7 @@ function navigate(page) {
   if (page === 'assess') renderAssess();
   if (page === 'results') renderResults();
   if (page === 'reflect') renderReflect();
+  if (page === 'progress') renderProgress();
 }
 
 // ── HOME ──
@@ -277,7 +278,8 @@ function renderResults() {
       <div class="insight-block">${insight}</div>
 
       <div class="results-actions">
-        <button class="btn btn-primary" onclick="navigate('reflect'); setTimeout(()=>setReflectCircuit(${dominantIdx}),100)">Journal Circuit ${dominant.num} →</button>
+        <button class="btn btn-primary" onclick="openPlanModal(${dominantIdx}, ${scores[dominantIdx]})">Get a Plan →</button>
+        <button class="btn" onclick="navigate('reflect'); setTimeout(()=>setReflectCircuit(${dominantIdx}),100)">Journal Circuit ${dominant.num}</button>
         <button class="btn" onclick="openShareModal()">Share Profile</button>
         <button class="btn" onclick="navigate('assess')">Retake</button>
       </div>
@@ -437,6 +439,88 @@ Respond with:
   }
 }
 
+
+// ── PLAN ──
+async function openPlanModal(circuitIdx, score) {
+  const modal = document.getElementById('share-modal');
+  const modalContent = document.getElementById('share-modal-content');
+  if (!modal || !modalContent) return;
+
+  const c = CIRCUITS[circuitIdx];
+  const scores = APP_STATE.scores;
+
+  modalContent.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
+      <div>
+        <div class="circuit-eyebrow">Circuit ${c.num} · ${c.name}</div>
+        <div class="modal-title">Your Plan</div>
+      </div>
+      <button class="modal-close" onclick="closeShareModal()">×</button>
+    </div>
+    <div class="ai-response loading" id="plan-response">Building your plan...</div>
+    <div id="plan-actions" style="display:none;margin-top:1rem;display:none;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="savePlan()">Save Plan</button>
+      <button class="btn" onclick="copyPlan()">Copy to Clipboard</button>
+      <button class="btn" onclick="closeShareModal()">Close</button>
+    </div>
+  `;
+
+  modal.classList.add('open');
+
+  const scoreContext = scores
+    ? scores.map((s, i) => `C${CIRCUITS[i].num} ${CIRCUITS[i].name}: ${s}/4`).join(', ')
+    : '';
+
+  const system = `You are a direct, practical guide helping someone work with Timothy Leary's 8-circuit model as a self-development tool. Give concrete, specific advice. No jargon. No fluff.`;
+
+  const userPrompt = `My weakest circuit is Circuit ${c.num} (${c.name}) — I scored ${score}/4.
+My full profile: ${scoreContext}.
+
+Give me the most practical steps I can take THIS WEEK to strengthen Circuit ${c.num}. Be specific — day by day if helpful, concrete actions, not generic advice. Under 350 words.`;
+
+  try {
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = data.content?.find(b => b.type === 'text')?.text || 'No response.';
+    const el = document.getElementById('plan-response');
+    if (el) {
+      el.className = 'ai-response fade-in';
+      el.textContent = text;
+      window._currentPlan = { text, circuitIdx };
+    }
+    const actions = document.getElementById('plan-actions');
+    if (actions) actions.style.display = 'flex';
+  } catch (err) {
+    const el = document.getElementById('plan-response');
+    if (el) {
+      el.className = 'ai-response';
+      el.textContent = `Error: ${err.message}`;
+    }
+  }
+}
+
+function savePlan() {
+  if (!window._currentPlan) return;
+  APP_STATE.savePlan(window._currentPlan.text, window._currentPlan.circuitIdx);
+  showToast('Plan saved');
+}
+
+function copyPlan() {
+  if (!window._currentPlan) return;
+  const c = CIRCUITS[window._currentPlan.circuitIdx];
+  const text = `My 8 Circuits Plan — Circuit ${c.num}: ${c.name}\n\n${window._currentPlan.text}`;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+}
+
 // ── SHARE ──
 function openShareModal() {
   if (!APP_STATE.scores) return;
@@ -495,6 +579,246 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+
+// ── PROGRESS ──
+function renderProgress() {
+  const wrap = document.getElementById('progress-wrap');
+  if (!wrap) return;
+
+  const checkins = APP_STATE.checkins;
+  const savedPlan = APP_STATE.savedPlan;
+  const hasCheckins = checkins.length > 0;
+
+  wrap.innerHTML = `
+    <div class="progress-layout">
+
+      <div class="progress-main">
+        <div class="progress-header">
+          <div class="results-title">Progress</div>
+          <button class="btn btn-primary" onclick="openCheckinModal()">Weekly Check-in →</button>
+        </div>
+
+        ${!hasCheckins ? `
+          <div class="progress-empty">
+            <p style="font-size:18px;color:var(--text-muted);font-weight:300;margin-bottom:1rem;">No check-ins yet.</p>
+            <p style="font-size:16px;color:var(--text-dim);font-weight:300;">Complete a weekly check-in to start tracking how your circuits shift over time.</p>
+          </div>
+        ` : `
+          <div class="section-label" style="margin-top:2rem;">Circuit trends</div>
+          <div class="trend-chart" id="trend-chart"></div>
+          <div class="checkin-history" id="checkin-history"></div>
+        `}
+      </div>
+
+      <div class="progress-sidebar">
+        ${savedPlan ? `
+          <div class="saved-plan-block">
+            <div class="section-label">Saved plan</div>
+            <div class="saved-plan-circuit">C${savedPlan.circuitIdx + 1} ${CIRCUITS[savedPlan.circuitIdx].name}</div>
+            <div class="saved-plan-date">${new Date(savedPlan.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+            <div class="saved-plan-text">${savedPlan.plan}</div>
+            <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;">
+              <button class="btn" onclick="copyPlanFromSaved()">Copy</button>
+              <button class="btn" onclick="clearPlan()">Clear</button>
+            </div>
+          </div>
+        ` : `
+          <div class="saved-plan-block empty-plan">
+            <div class="section-label">Saved plan</div>
+            <p style="font-size:16px;color:var(--text-dim);font-weight:300;line-height:1.7;">No plan saved yet. Generate one from your Results page.</p>
+            <button class="btn" style="margin-top:1rem;" onclick="navigate('results')">Go to Results</button>
+          </div>
+        `}
+      </div>
+
+    </div>
+  `;
+
+  if (hasCheckins) {
+    renderTrendChart();
+    renderCheckinHistory();
+  }
+}
+
+function renderTrendChart() {
+  const chart = document.getElementById('trend-chart');
+  if (!chart) return;
+
+  const checkins = APP_STATE.checkins.slice(-8); // last 8 weeks
+  const w = chart.offsetWidth || 600;
+  const h = 200;
+  const padL = 40, padR = 20, padT = 16, padB = 32;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+  const cols = ['#2176c7','#1a5fa0','#7a9ab8','#c8d8e8','#003b6f','#4a8fc0','#93b8d8','#e8f0f8'];
+
+  const xStep = checkins.length > 1 ? chartW / (checkins.length - 1) : chartW;
+
+  let paths = CIRCUITS.map((c, ci) => {
+    const pts = checkins.map((chk, i) => {
+      const x = padL + (checkins.length > 1 ? i * xStep : chartW / 2);
+      const y = padT + chartH - ((chk.scores[ci] - 1) / 3) * chartH;
+      return `${x},${y}`;
+    });
+    return `<polyline points="${pts.join(' ')}" fill="none" stroke="${cols[ci]}" stroke-width="1.5" opacity="0.7"/>`;
+  }).join('');
+
+  let dots = CIRCUITS.map((c, ci) =>
+    checkins.map((chk, i) => {
+      const x = padL + (checkins.length > 1 ? i * xStep : chartW / 2);
+      const y = padT + chartH - ((chk.scores[ci] - 1) / 3) * chartH;
+      return `<circle cx="${x}" cy="${y}" r="3" fill="${cols[ci]}" opacity="0.9"><title>C${c.num} ${c.name}: ${chk.scores[ci]}/4</title></circle>`;
+    }).join('')
+  ).join('');
+
+  // Y axis labels
+  const yLabels = [1,2,3,4].map(v => {
+    const y = padT + chartH - ((v - 1) / 3) * chartH;
+    return `<text x="${padL - 8}" y="${y + 4}" fill="#2a4a68" font-size="12" text-anchor="end">${v}</text>`;
+  }).join('');
+
+  // X axis dates
+  const xLabels = checkins.map((chk, i) => {
+    const x = padL + (checkins.length > 1 ? i * xStep : chartW / 2);
+    const d = new Date(chk.date);
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<text x="${x}" y="${h - 6}" fill="#2a4a68" font-size="11" text-anchor="middle">${label}</text>`;
+  }).join('');
+
+  // Grid lines
+  const gridLines = [1,2,3,4].map(v => {
+    const y = padT + chartH - ((v - 1) / 3) * chartH;
+    return `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="#0a1f35" stroke-width="1"/>`;
+  }).join('');
+
+  chart.innerHTML = `
+    <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+      ${gridLines}${paths}${dots}${yLabels}${xLabels}
+    </svg>
+    <div class="chart-legend">
+      ${CIRCUITS.map((c, ci) => `
+        <span class="legend-item">
+          <span class="legend-dot" style="background:${cols[ci]}"></span>
+          C${c.num} ${c.name}
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCheckinHistory() {
+  const el = document.getElementById('checkin-history');
+  if (!el) return;
+
+  const checkins = [...APP_STATE.checkins].reverse();
+
+  el.innerHTML = `
+    <div class="section-label" style="margin-top:2.5rem;">Check-in history</div>
+    ${checkins.map((chk, i) => {
+      const d = new Date(chk.date);
+      const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const dominant = chk.scores.indexOf(Math.min(...chk.scores));
+      const strongest = chk.scores.indexOf(Math.max(...chk.scores));
+      return `
+        <div class="checkin-card">
+          <div class="checkin-card-header">
+            <span class="checkin-date">${dateStr}</span>
+            <button class="checkin-delete" onclick="deleteCheckin(${APP_STATE.checkins.length - 1 - i})">×</button>
+          </div>
+          <div class="checkin-scores">
+            ${CIRCUITS.map((c, ci) => `
+              <div class="checkin-score-row">
+                <span class="checkin-circuit-name ${ci === dominant ? 'low' : ci === strongest ? 'high' : ''}"">C${c.num} ${c.name}</span>
+                <div class="checkin-bar-track">
+                  <div class="checkin-bar-fill" style="width:${(chk.scores[ci]/4)*100}%"></div>
+                </div>
+                <span class="checkin-score-val">${chk.scores[ci]}/4</span>
+              </div>
+            `).join('')}
+          </div>
+          ${chk.note ? `<p class="checkin-note">${chk.note}</p>` : ''}
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+function deleteCheckin(idx) {
+  APP_STATE.checkins.splice(idx, 1);
+  APP_STATE.save();
+  renderProgress();
+}
+
+function copyPlanFromSaved() {
+  const p = APP_STATE.savedPlan;
+  if (!p) return;
+  const c = CIRCUITS[p.circuitIdx];
+  navigator.clipboard.writeText(`My 8 Circuits Plan — C${c.num} ${c.name}\n\n${p.plan}`)
+    .then(() => showToast('Copied'));
+}
+
+function clearPlan() {
+  APP_STATE.savedPlan = null;
+  APP_STATE.save();
+  renderProgress();
+}
+
+// ── CHECK-IN MODAL ──
+function openCheckinModal() {
+  const modal = document.getElementById('share-modal');
+  const content = document.getElementById('share-modal-content');
+  if (!modal || !content) return;
+
+  const prev = APP_STATE.scores || Array(8).fill(2);
+
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
+      <div>
+        <div class="circuit-eyebrow">Weekly</div>
+        <div class="modal-title">Check-in</div>
+      </div>
+      <button class="modal-close" onclick="closeShareModal()">×</button>
+    </div>
+
+    <p style="font-size:16px;color:var(--text-muted);margin-bottom:1.5rem;font-weight:300;">Rate each circuit honestly — where are you right now, this week?</p>
+
+    <div id="checkin-sliders">
+      ${CIRCUITS.map((c, i) => `
+        <div class="checkin-slider-row">
+          <div class="checkin-slider-label">
+            <span>C${c.num} ${c.name}</span>
+            <span class="checkin-slider-val" id="val-${i}">${prev[i]}/4</span>
+          </div>
+          <input type="range" min="1" max="4" step="1" value="${prev[i]}"
+            oninput="document.getElementById('val-${i}').textContent=this.value+'/4'"
+            id="slider-${i}" style="width:100%;"/>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <div class="api-key-label">Note (optional)</div>
+      <textarea class="journal-textarea" id="checkin-note" placeholder="How are you feeling this week?" style="min-height:64px;margin-top:6px;"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:1.25rem;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="submitCheckin()">Save Check-in</button>
+      <button class="btn" onclick="closeShareModal()">Cancel</button>
+    </div>
+  `;
+
+  modal.classList.add('open');
+}
+
+function submitCheckin() {
+  const scores = CIRCUITS.map((_, i) => parseInt(document.getElementById(`slider-${i}`)?.value || 2));
+  const note = document.getElementById('checkin-note')?.value?.trim() || '';
+  APP_STATE.addCheckin(scores, note);
+  closeShareModal();
+  showToast('Check-in saved');
+  navigate('progress');
 }
 
 // ── INIT ──

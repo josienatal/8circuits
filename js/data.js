@@ -159,10 +159,29 @@ const APP_STATE = {
   lastAssessed: localStorage.getItem('circuit_last_assessed') || null,
   currentPage: 'home',
 
+  checkins: JSON.parse(localStorage.getItem('circuit_checkins') || '[]'),
+  savedPlan: JSON.parse(localStorage.getItem('circuit_saved_plan') || 'null'),
+
   save() {
     localStorage.setItem('circuit_scores', JSON.stringify(this.scores));
     localStorage.setItem('circuit_journals', JSON.stringify(this.journals));
     localStorage.setItem('circuit_last_assessed', this.lastAssessed);
+    localStorage.setItem('circuit_checkins', JSON.stringify(this.checkins));
+    localStorage.setItem('circuit_saved_plan', JSON.stringify(this.savedPlan));
+  },
+
+  addCheckin(scores, note) {
+    this.checkins.push({
+      date: new Date().toISOString(),
+      scores,
+      note: note || ''
+    });
+    this.save();
+  },
+
+  savePlan(plan, circuitIdx) {
+    this.savedPlan = { plan, circuitIdx, savedAt: new Date().toISOString() };
+    this.save();
   },
 
   getDominantCircuit() {

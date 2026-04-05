@@ -181,7 +181,7 @@ nav {
 /* HOME CARDS */
 .home-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1px;
   background: var(--border);
 }
@@ -675,15 +675,120 @@ nav {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
 
-@media (max-width: 768px) {
-  .explore-layout { grid-template-columns: 1fr; }
-  .explore-sidebar { position: static; height: auto; border-right: none; border-bottom: 0.5px solid var(--border); display: flex; flex-wrap: wrap; padding: 1rem; gap: 4px; }
-  .sidebar-item { width: auto; padding: 7px 12px; }
-  .sidebar-section-label { display: none; }
+/* ── RESPONSIVE ── */
+
+/* Tablet: 768px–1024px */
+@media (max-width: 1024px) {
+  .explore-layout { grid-template-columns: 220px 1fr; }
+  .explore-content { padding: 2rem 2rem 3rem; }
   .reflect-wrap { grid-template-columns: 1fr; }
-  .reflect-right { border-top: 0.5px solid var(--border); }
-  .results-grid { grid-template-columns: 1fr; }
+  .reflect-right { border-top: 0.5px solid var(--border); border-left: none; }
+  .results-wrap { padding: 3rem 1.5rem; }
+  .circuit-hero-title { font-size: 60px; }
+}
+
+/* Mobile: max 768px */
+@media (max-width: 768px) {
+  :root { --nav-h: 56px; }
+
+  /* Nav — collapse links to icon row */
+  nav { padding: 0 1rem; }
+  .nav-logo { font-size: 20px; }
+  .nav-links { gap: 1rem; }
+  .nav-links a { font-size: 14px; letter-spacing: 0.03em; }
+
+  /* Hero */
+  .hero { padding: 3rem 1.25rem 2rem; }
+  .hero-title { font-size: clamp(48px, 14vw, 72px); }
+  .hero-eyebrow { font-size: 14px; }
+  .hero-sub { font-size: 16px; margin-bottom: 2rem; }
+  .hero-cta { flex-direction: column; align-items: center; }
+  .hero-cta .btn { width: 100%; max-width: 320px; text-align: center; }
+  .hero-circuits { margin-top: 2.5rem; }
+  .hero-circuit-dot { width: 28px; }
+
+  /* Home cards: 2 columns on mobile */
+  .home-cards { grid-template-columns: repeat(2, 1fr); }
+  .home-card { padding: 1.5rem 1rem; }
+  .home-card-num { font-size: 36px; }
+  .home-card-title { font-size: 14px; }
+  .home-card-desc { font-size: 14px; }
+
+  /* Explore: sidebar becomes horizontal scroll tabs */
+  .explore-layout { grid-template-columns: 1fr; }
+  .explore-sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .explore-sidebar::-webkit-scrollbar { display: none; }
+  .sidebar-section-label { display: none; }
+  .sidebar-item {
+    width: auto;
+    white-space: nowrap;
+    padding: 6px 14px;
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .sidebar-item.active { border-color: var(--blue-vivid); }
+  .explore-content { padding: 1.5rem 1.25rem 3rem; }
+  .circuit-hero-title { font-size: 48px; }
+  .circuit-keyword { font-size: 22px; }
+  .circuit-desc { font-size: 16px; }
   .circuit-grid-2 { grid-template-columns: 1fr; }
-  .hero-title { font-size: 64px; }
-  .circuit-hero-title { font-size: 52px; }
+
+  /* Assess */
+  .assess-wrap { padding: 2rem 1.25rem; }
+  .assess-question { font-size: 32px; }
+  .assess-opt { padding: 14px 16px; font-size: 15px; }
+
+  /* Results */
+  .results-wrap { padding: 2rem 1.25rem; }
+  .results-title { font-size: 48px; }
+  .results-grid { grid-template-columns: 1fr 1fr; }
+  .result-cell { padding: 1rem; }
+  .result-cell-label { font-size: 13px; }
+  .result-cell-value { font-size: 28px; }
+  .circuit-bar-name { width: 80px; font-size: 14px; }
+  .circuit-bar-score { font-size: 14px; }
+  .insight-block { padding: 1rem 1.25rem; font-size: 16px; }
+  .results-actions { flex-direction: column; }
+  .results-actions .btn { width: 100%; text-align: center; }
+
+  /* Reflect: stack vertically */
+  .reflect-wrap { grid-template-columns: 1fr; }
+  .reflect-left { padding: 1.5rem 1.25rem; }
+  .reflect-right { padding: 1.5rem 1.25rem; border-top: 0.5px solid var(--border); }
+  .reflect-title { font-size: 40px; }
+  .circuit-tabs { gap: 4px; }
+  .circuit-tab { font-size: 14px; padding: 5px 10px; }
+
+  /* Buttons full-width on mobile */
+  .reflect-left .btn { width: 100%; text-align: center; margin-bottom: 0.5rem; }
+
+  /* Modal */
+  .modal { padding: 1.5rem; }
+  .modal-title { font-size: 30px; }
+
+  /* Buttons */
+  .btn { font-size: 15px; padding: 12px 24px; }
+}
+
+/* Very small screens */
+@media (max-width: 400px) {
+  .home-cards { grid-template-columns: 1fr; }
+  .results-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 44px; }
+  .nav-links { gap: 0.6rem; }
+  .nav-links a { font-size: 13px; }
 }

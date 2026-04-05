@@ -330,16 +330,6 @@ function renderReflect() {
 
   right.innerHTML = `
     <div class="section-label">AI reflection</div>
-    <div class="api-key-wrap">
-      <div class="api-key-label">Anthropic API Key</div>
-      <input type="password" class="api-key-input" id="api-key-input"
-        placeholder="sk-ant-..."
-        value="${localStorage.getItem('circuit_api_key') || ''}"
-        oninput="localStorage.setItem('circuit_api_key', this.value)"
-      />
-      <p style="font-size:11px;color:var(--text-dim);margin-top:6px;">Your key is stored only in your browser. Never shared.</p>
-    </div>
-
     <div class="ai-response empty" id="ai-response">
       Write your reflections, then click "Reflect with AI" to receive personalized insights.
     </div>
@@ -383,16 +373,6 @@ function saveJournal() {
 }
 
 async function sendToAI() {
-  const apiKey = localStorage.getItem('circuit_api_key');
-  if (!apiKey) {
-    const responseEl = document.getElementById('ai-response');
-    if (responseEl) {
-      responseEl.className = 'ai-response';
-      responseEl.textContent = 'Please enter your Anthropic API key above to use AI reflection.';
-    }
-    return;
-  }
-
   const c = CIRCUITS[reflectCircuitIdx];
   const entries = c.journalPrompts.map((prompt, i) => {
     const el = document.getElementById(`journal-${reflectCircuitIdx}-${i}`);
@@ -400,8 +380,9 @@ async function sendToAI() {
     return val ? `Q: ${prompt}\nA: ${val}` : null;
   }).filter(Boolean);
 
+  const responseEl = document.getElementById('ai-response');
+
   if (entries.length === 0) {
-    const responseEl = document.getElementById('ai-response');
     if (responseEl) {
       responseEl.className = 'ai-response';
       responseEl.textContent = 'Write at least one journal entry first.';
@@ -409,7 +390,6 @@ async function sendToAI() {
     return;
   }
 
-  const responseEl = document.getElementById('ai-response');
   if (responseEl) {
     responseEl.className = 'ai-response loading';
     responseEl.textContent = 'Reflecting...';
@@ -420,33 +400,30 @@ async function sendToAI() {
     ? `The user's circuit assessment: ${CIRCUITS.map((circuit, i) => `C${circuit.num} ${circuit.name}: ${scores[i]}/4`).join(', ')}.`
     : '';
 
-  const prompt = `You are a thoughtful guide working with someone exploring Timothy Leary's 8-circuit model of consciousness as a self-development framework. ${scoreContext}
+  const system = `You are a thoughtful guide working with someone exploring Timothy Leary's 8-circuit model of consciousness as a self-development framework. ${scoreContext} Be direct, warm, and specific. No jargon. Under 300 words.`;
 
-The user has been journaling about Circuit ${c.num}: ${c.name} (${c.keyword}).
+  const userPrompt = `I've been journaling about Circuit ${c.num}: ${c.name} (${c.keyword}).
 
-Their reflections:
+My reflections:
 ${entries.join('\n\n')}
 
 Respond with:
-1. What genuine patterns you notice in their responses (specific, not generic)
-2. What they might be missing or avoiding (honest, direct)
-3. One concrete practice they could do THIS WEEK based specifically on what they wrote
-
-Be direct, warm, and specific. No jargon. Under 300 words.`;
+1. What genuine patterns you notice in my responses (specific, not generic)
+2. What I might be missing or avoiding (honest, direct)
+3. One concrete practice I could do THIS WEEK based specifically on what I wrote`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/claude', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }]
+        system,
+        messages: [{ role: 'user', content: userPrompt }]
       })
     });
 
     const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content?.find(b => b.type === 'text')?.text || 'No response.';
     if (responseEl) {
       responseEl.className = 'ai-response fade-in';

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8 Circuits — Map Your Mind</title>
+  <meta name="description" content="Timothy Leary's 8-circuit model of consciousness as a practical self-development tool. Assess, explore, and journal your way through the circuits." />
+  <meta property="og:title" content="8 Circuits — Map Your Mind" />
+  <meta property="og:description" content="Discover which of your 8 neurological circuits are active, stuck, or waiting to be unlocked." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo" onclick="navigate('home')">8 CIRCUITS</div>
+  <ul class="nav-links">
+    <li><a href="#" data-page="home" onclick="navigate('home');return false;" class="active">Home</a></li>
+    <li><a href="#" data-page="explore" onclick="navigate('explore');return false;">Explore</a></li>
+    <li><a href="#" data-page="assess" onclick="navigate('assess');return false;">Assess</a></li>
+    <li><a href="#" data-page="results" onclick="navigate('results');return false;">Results</a></li>
+    <li><a href="#" data-page="reflect" onclick="navigate('reflect');return false;">Reflect</a></li>
+  </ul>
+</nav>
+
+<!-- ── HOME ── -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-eyebrow">Timothy Leary's 8-Circuit Model</div>
+    <div class="hero-title">
+      MAP YOUR<br><span>MIND</span>
+    </div>
+    <p class="hero-sub">
+      What if the way you experience life isn't random, but programmed?
+      Eight circuits. Most people never activate beyond the fourth.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" onclick="navigate('assess')">Take the Assessment →</button>
+      <button class="btn" onclick="navigate('explore')">Explore the Circuits</button>
+    </div>
+    <div class="hero-circuits" id="hero-dots"></div>
+  </div>
+
+  <div class="home-cards" id="home-cards"></div>
+
+  <div style="padding: 4rem 2rem; max-width: 720px; margin: 0 auto; text-align: center;">
+    <div class="section-label" style="justify-content: center; display: flex;">The premise</div>
+    <p style="font-size: 18px; color: var(--text-muted); font-weight: 300; line-height: 1.9; margin-bottom: 1.5rem;">
+      Leary mapped eight neurological circuits — four terrestrial circuits that keep you alive and functional, four cosmic circuits that most people never access.
+    </p>
+    <p style="font-size: 15px; color: var(--text-dim); font-weight: 300; line-height: 1.8;">
+      The model is speculative, not neuroscience. But the questions it generates are real.
+      Where are you stuck? What's waiting to be unlocked?
+    </p>
+  </div>
+</div>
+
+<!-- ── EXPLORE ── -->
+<div id="page-explore" class="page">
+  <div class="explore-layout">
+    <div class="explore-sidebar" id="explore-sidebar"></div>
+    <div class="explore-content" id="explore-content"></div>
+  </div>
+</div>
+
+<!-- ── ASSESS ── -->
+<div id="page-assess" class="page">
+  <div class="assess-wrap" id="assess-wrap"></div>
+</div>
+
+<!-- ── RESULTS ── -->
+<div id="page-results" class="page">
+  <div class="results-wrap" id="results-wrap"></div>
+</div>
+
+<!-- ── REFLECT ── -->
+<div id="page-reflect" class="page">
+  <div class="reflect-wrap">
+    <div class="reflect-left" id="reflect-left"></div>
+    <div class="reflect-right" id="reflect-right"></div>
+  </div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div class="modal-overlay" id="share-modal" onclick="if(event.target===this)closeShareModal()">
+  <div class="modal" id="share-modal-content"></div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="copied-toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -700,7 +700,7 @@ nav {
   /* Hero */
   .hero { padding: 3rem 1.25rem 2rem; }
   .hero-title { font-size: clamp(48px, 14vw, 72px); }
-  .hero-eyebrow { font-size: 14px; }
+  .hero-eyebrow { font-size: 14px;         margin: 20px auto;}
   .hero-sub { font-size: 16px; margin-bottom: 2rem; }
   .hero-cta { flex-direction: column; align-items: center; }
   .hero-cta .btn { width: 100%; max-width: 320px; text-align: center; }
@@ -789,7 +789,7 @@ nav {
   .home-cards { grid-template-columns: 1fr; }
   .results-grid { grid-template-columns: 1fr; }
   .hero-title { font-size: 44px; }
-  .nav-links { gap: 0.6rem; }
+  .nav-links { gap: 0.6rem;width: 100%; }
   .nav-links a { font-size: 13px; }
 }
 
